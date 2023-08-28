@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": false,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "lib": ["esnext"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noImplicitUseStrict": false,
+    "noImplicitAny": false,
+    "noStrictGenericChecks": false,
+    "noUncheckedIndexedAccess": true,
+    "allowSyntheticDefaultImports": true,
+  }
+}
