@@ -1,35 +1,25 @@
-import { compile, Input } from './compiler'
+import { Compiler, Logger } from './Compiler'
 import path from 'path'
 import kleur from 'kleur'
 import del from 'del'
 
-type Options = Input & {
-    options?: {
-        babelrc?: boolean | null
-        configFile?: string | false | null
-        sourceMaps?: boolean
-        copyFlow?: boolean
+export class CommonJS {
+    constructor(private compiler: Compiler, private logger: Logger) {
+    }
+
+    async build(config: CommonJSConfig) {
+        this.logger.info(`Cleaning up previous build at ${kleur.blue(path.relative(config.root, config.output))}`)
+        await del([config.output])
+        await this.compiler.compile({ ...config, modules: 'commonjs', field: 'main' })
     }
 }
 
-export class CommonJS {
-    async build({
-        root,
-        source,
-        output,
-        options,
-        report,
-    }: Options) {
-        report.info(`Cleaning up previous build at ${kleur.blue(path.relative(root, output))}`)
-        await del([output])
-        await compile({
-            ...options,
-            root,
-            source,
-            output,
-            modules: 'commonjs',
-            report,
-            field: 'main',
-        })
-    }
+interface CommonJSConfig {
+    root: string
+    source: string
+    output: string
+    babelrc?: boolean | null
+    configFile?: string | false | null
+    sourceMaps?: boolean
+    copyFlow?: boolean
 }
