@@ -1,7 +1,8 @@
-import { Compiler, Logger } from './Compiler'
+import { Compiler } from './Compiler'
 import path from 'path'
 import kleur from 'kleur'
 import del from 'del'
+import { Logger } from './Logger'
 
 export class CommonJS {
     constructor(private compiler: Compiler, private logger: Logger) {

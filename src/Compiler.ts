@@ -3,15 +3,7 @@ import { glob } from 'glob'
 import kleur from 'kleur'
 import fs from 'fs-extra'
 import * as babel from '@babel/core'
-
-export type Log = (message: string) => void
-
-export interface Logger {
-    info: Log
-    warn: Log
-    success: Log
-    error: Log
-}
+import { Logger } from './Logger'
 
 export class Compiler {
     constructor(private logger: Logger) {
@@ -24,14 +16,12 @@ export class Compiler {
             nodir: true,
             ignore: '**/{__tests__,__fixtures__,__mocks__}/**',
         })
+        await this.transformFiles(files, config)
+        await this.copyDependencies(config)
+    }
 
-        this.logger.info(
-            `Compiling ${kleur.blue(files.length.toString())}
-            files in ${kleur.blue(path.relative(config.root, config.source))} with ${kleur.blue('babel')}`
-        )
-
-        const pkg = JSON.parse(await fs.readFile(path.join(config.root, 'package.json'), 'utf-8'))
-
+    private async transformFiles(files: string[], config: CompilerConfig) {
+        this.logger.info(`Compiling ${kleur.blue(files.length.toString())} files in ${kleur.blue(path.relative(config.root, config.source))} with ${kleur.blue('babel')}`)
         await Promise.all(
             files.map(async (filepath) => {
                 const outputFilename = path
@@ -41,7 +31,6 @@ export class Compiler {
                 await fs.mkdirp(path.dirname(outputFilename))
 
                 if (!/\.(jsx?|tsx?)$/.test(filepath)) {
-                    // Copy files which aren't source code
                     fs.copy(filepath, outputFilename)
                     return
                 }
@@ -55,36 +44,7 @@ export class Compiler {
                     sourceRoot: path.relative(path.dirname(outputFilename), config.source),
                     sourceFileName: path.relative(config.source, filepath),
                     filename: filepath,
-                    ...(config.babelrc || config.configFile
-                        ? null
-                        : {
-                            presets: [
-                                [
-                                    require.resolve('@babel/preset-env'),
-                                    {
-                                        targets: {
-                                            browsers: [
-                                                '>1%',
-                                                'last 2 chrome versions',
-                                                'last 2 edge versions',
-                                                'last 2 firefox versions',
-                                                'last 2 safari versions',
-                                                'not dead',
-                                                'not ie <= 11',
-                                                'not op_mini all',
-                                                'not android <= 4.4',
-                                                'not samsung <= 4',
-                                            ],
-                                            node: '16',
-                                        },
-                                        useBuiltIns: false,
-                                        modules: config.modules,
-                                    },
-                                ],
-                                require.resolve('@babel/preset-react'),
-                                require.resolve('@babel/preset-typescript'),
-                            ],
-                        }),
+                    ...(config.babelrc || config.configFile ? null : this.defaultBabelConfig(config.modules)),
                 })
 
                 if (result == null) {
@@ -98,18 +58,19 @@ export class Compiler {
 
                     code += '\n//# sourceMappingURL=' + path.basename(mapFilename)
 
-                    // Don't inline the source code, it can be retrieved from the source file
                     result.map.sourcesContent = undefined
 
                     fs.writeFileSync(mapFilename, JSON.stringify(result.map))
                 }
 
                 await fs.writeFile(outputFilename, code)
-            })
+            }),
         )
-
         this.logger.success(`Wrote files to ${kleur.blue(path.relative(config.root, config.output))}`)
+    }
 
+    private async copyDependencies(config: CompilerConfig) {
+        const pkg = JSON.parse(await fs.readFile(path.join(config.root, 'package.json'), 'utf-8'))
         if (config.field in pkg) {
             try {
                 require.resolve(path.join(config.root, pkg[config.field]))
@@ -122,12 +83,12 @@ export class Compiler {
                 ) {
                     this.logger.error(
                         `The ${kleur.blue(config.field)} field in ${kleur.blue(
-                            'package.json'
+                            'package.json',
                         )} points to a non-existent file: ${kleur.blue(
-                            pkg[config.field]
+                            pkg[config.field],
                         )}.\nVerify the path points to the correct file under ${kleur.blue(
-                            path.relative(config.root, config.output)
-                        )}.`
+                            path.relative(config.root, config.output),
+                        )}.`,
                     )
 
                     throw new Error(`Found incorrect path in '${config.field}' field.`)
@@ -138,11 +99,42 @@ export class Compiler {
         } else {
             this.logger.warn(
                 `No ${kleur.blue(config.field)} field found in ${kleur.blue(
-                    'package.json'
+                    'package.json',
                 )}. Add it to your ${kleur.blue(
-                    'package.json'
-                )} so that consumers of your package can use it.`
+                    'package.json',
+                )} so that consumers of your package can use it.`,
             )
+        }
+    }
+
+    private defaultBabelConfig(modules) {
+        return {
+            presets: [
+                [
+                    require.resolve('@babel/preset-env'),
+                    {
+                        targets: {
+                            browsers: [
+                                '>1%',
+                                'last 2 chrome versions',
+                                'last 2 edge versions',
+                                'last 2 firefox versions',
+                                'last 2 safari versions',
+                                'not dead',
+                                'not ie <= 11',
+                                'not op_mini all',
+                                'not android <= 4.4',
+                                'not samsung <= 4',
+                            ],
+                            node: '16',
+                        },
+                        useBuiltIns: false,
+                        modules,
+                    },
+                ],
+                require.resolve('@babel/preset-react'),
+                require.resolve('@babel/preset-typescript'),
+            ],
         }
     }
 }
@@ -157,4 +149,3 @@ export interface CompilerConfig {
     modules: 'commonjs' | false
     field: 'main' | 'module'
 }
-
