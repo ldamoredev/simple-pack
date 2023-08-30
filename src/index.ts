@@ -1,15 +1,16 @@
 import path from 'path'
 import { KleurLogger } from './Logger'
 import { CommonJS } from './CommonJS'
-import { Compiler } from './Compiler'
+import { BabelTranspiler } from './transpiler/babelTranspiler/BabelTranspiler'
+import { Babel } from './transpiler/babelTranspiler/Babel'
 
 const root = process.cwd()
 const source = "src/test"
 const output = "dist"
 
 const logger = new KleurLogger()
-const compiler = new Compiler(logger)
-const commonJS = new CommonJS(compiler, logger)
+const transpiler = new BabelTranspiler(logger, new Babel())
+const commonJS = new CommonJS(transpiler, logger)
 
 commonJS.build({
     root,
