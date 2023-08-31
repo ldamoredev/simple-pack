@@ -1,17 +1,17 @@
-import { BabelTranspiler } from './transpiler/babelTranspiler/BabelTranspiler'
+import { BabelTranspiler } from '../transpiler/babelTranspiler/BabelTranspiler'
 import path from 'path'
 import kleur from 'kleur'
 import del from 'del'
-import { Logger } from './Logger'
+import { Logger } from '../Logger'
 
-export class CommonJS {
-    constructor(private compiler: BabelTranspiler, private logger: Logger) {
+export class Module {
+    constructor(private transpiler: BabelTranspiler, private logger: Logger) {
     }
 
     async build(config: CommonJSConfig) {
         this.logger.info(`Cleaning up previous build at ${kleur.blue(path.relative(config.root, config.output))}`)
         await del([config.output])
-        await this.compiler.transform({ ...config, modules: 'commonjs', field: 'main' })
+        await this.transpiler.transform({ ...config, modules: 'module', field: 'module' })
     }
 }
 

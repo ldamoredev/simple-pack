@@ -5,7 +5,7 @@ import { Logger } from '../../Logger'
 import { Babel } from './Babel'
 
 export class BabelTranspiler {
-    constructor(private logger: Logger, private babel: Babel) {
+    constructor(private babel: Babel, private logger: Logger) {
     }
 
     async transform(config: TranspilerConfig) {
@@ -29,9 +29,6 @@ export interface TranspilerConfig {
     root: string
     source: string
     output: string
-    babelrc?: boolean | null
-    configFile?: string | false | null
-    sourceMaps?: boolean
-    modules: 'commonjs' | false
+    modules: 'commonjs' | 'module'
     field: 'main' | 'module'
 }

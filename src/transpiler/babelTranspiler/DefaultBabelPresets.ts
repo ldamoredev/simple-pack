@@ -1,4 +1,4 @@
-export const defaultBabelrcConfig = (modules) => {
+export const defaultBabelPresets = (modules) => {
     return {
         presets: [
             [
